@@ -8,6 +8,8 @@ const PayloadSchema = z.object({
   notification_ids: z.array(z.string().uuid()),
 })
 
+const BATCH_SIZE = 50
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -21,7 +23,8 @@ Deno.serve(async (req) => {
     })
   }
 
-  const vapidPublic = Deno.env.get('VITE_VAPID_PUBLIC_KEY') ?? Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
+  const vapidPublic =
+    Deno.env.get('VITE_VAPID_PUBLIC_KEY') ?? Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
   const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
   const vapidSubject = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:it@prodi.example.ac.id'
 
@@ -58,9 +61,13 @@ Deno.serve(async (req) => {
       if (!subs || subs.length === 0) continue
 
       let anySuccess = false
-      for (const sub of subs) {
-        try {
-          if (vapidPublic && vapidPrivate) {
+
+      // Proses subscriptions dalam batch 50 per panggilan
+      for (let i = 0; i < subs.length; i += BATCH_SIZE) {
+        const chunk = subs.slice(i, i + BATCH_SIZE)
+        const promises = chunk.map(async (sub) => {
+          if (!vapidPublic || !vapidPrivate) return false
+          try {
             await webpush.sendNotification(
               {
                 endpoint: sub.endpoint,
@@ -73,12 +80,20 @@ Deno.serve(async (req) => {
                 aksi_url: notif.aksi_url ?? '/',
               })
             )
+            return true
+          } catch (err: unknown) {
+            const statusCode = (err as { statusCode?: number })?.statusCode
+            if (statusCode === 404 || statusCode === 410) {
+              await supabaseAdmin.from('push_subscriptions').delete().eq('id', sub.id)
+            }
+            return false
           }
-          anySuccess = true
-        } catch (err: unknown) {
-          const statusCode = (err as { statusCode?: number })?.statusCode
-          if (statusCode === 404 || statusCode === 410) {
-            await supabaseAdmin.from('push_subscriptions').delete().eq('id', sub.id)
+        })
+
+        const results = await Promise.allSettled(promises)
+        for (const res of results) {
+          if (res.status === 'fulfilled' && res.value === true) {
+            anySuccess = true
           }
         }
       }

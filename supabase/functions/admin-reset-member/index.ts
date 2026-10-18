@@ -4,6 +4,7 @@ import { createAdminClient } from '../_shared/supabase-admin.ts'
 
 const ResetSchema = z.object({
   member_id: z.string().uuid(),
+  alasan: z.string().min(1, 'Alasan reset akses wajib diisi'),
 })
 
 Deno.serve(async (req) => {
@@ -47,13 +48,19 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const parsed = ResetSchema.safeParse(body)
     if (!parsed.success) {
-      return new Response(JSON.stringify({ ok: false, pesan: 'Input tidak valid' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          pesan: parsed.error.issues[0]?.message ?? 'Input tidak valid',
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
-    const { member_id } = parsed.data
+    const { member_id, alasan } = parsed.data
 
     const { data: targetProfile } = await supabaseAdmin
       .from('profiles')
@@ -82,12 +89,13 @@ Deno.serve(async (req) => {
       .update({ activated_at: null })
       .eq('id', member_id)
 
+    // Catat ke admin_logs dengan aksi reset_akses, simpan alasan, dan JANGAN mencatat data pribadi/kode rahasia
     await supabaseAdmin.from('admin_logs').insert({
       actor_id: callerProfile.id,
       aksi: 'reset_akses',
       target_tipe: 'member',
       target_id: member_id,
-      detail: {},
+      detail: { alasan },
     })
 
     return new Response(JSON.stringify({ ok: true }), {

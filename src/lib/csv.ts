@@ -3,6 +3,8 @@ export interface MemberCsvRow {
   nama: string
   peran: string
   nim_nidn?: string
+  angkatan?: number
+  kelas?: string
 }
 
 export function parseMembersCsv(csvText: string): MemberCsvRow[] {
@@ -19,11 +21,15 @@ export function parseMembersCsv(csvText: string): MemberCsvRow[] {
   const rows: MemberCsvRow[] = []
   for (let i = startIndex; i < lines.length; i++) {
     const cols = lines[i].split(',').map((c) => c.trim())
+    const angkatanNum = cols[4] ? parseInt(cols[4], 10) : undefined
+
     rows.push({
       kode: cols[0] ?? '',
       nama: cols[1] ?? '',
       peran: (cols[2] ?? '').toLowerCase(),
       nim_nidn: cols[3] ? cols[3] : undefined,
+      angkatan: !isNaN(angkatanNum as number) ? angkatanNum : undefined,
+      kelas: cols[5] ? cols[5].toUpperCase() : undefined,
     })
   }
 

@@ -21,7 +21,29 @@ export type ReminderAction =
 
 const FIVE_HOURS_MS = 5 * 60 * 60 * 1000
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
 
+export function tanggalWib(d: Date): string {
+  const local = new Date(d.getTime() + WIB_OFFSET_MS)
+  return local.toISOString().slice(0, 10)
+}
+
+/** 06.30 WIB hari berikutnya (PRD A.1.10 langkah 1) */
+export function jamPenagihanBerikut(now: Date): Date {
+  const local = new Date(now.getTime() + WIB_OFFSET_MS)
+  const nextDayUtc = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth(),
+    local.getUTCDate() + 1,
+    6,
+    30,
+    0,
+    0
+  )
+  return new Date(nextDayUtc - WIB_OFFSET_MS)
+}
+
+/** Logika pengingat sesi reguler ke dosen (PRD 11.3) */
 export function evaluateSessionReminder(
   session: SessionReminderState,
   now: Date
@@ -66,4 +88,97 @@ export function evaluateSessionReminder(
     nextReminderAt,
     newReminderCount: session.reminderCount + 1,
   }
+}
+
+export interface TagihanBillingState {
+  status: 'menunggu' | 'diajukan' | 'terjadwal' | 'kedaluwarsa' | 'dibatalkan'
+  tenggatAt: Date
+  nextReminderAt: Date | null
+  reminderCount: number
+}
+
+export type TagihanBillingAction =
+  | { type: 'noop' }
+  | { type: 'stop_billing'; nextReminderAt: null }
+  | {
+      type: 'send_billing'
+      nextReminderAt: Date | null
+      newReminderCount: number
+    }
+
+/** Langkah 1: Penagihan harian tagihan pengganti (PRD A.1.10) */
+export function evaluateTagihanBilling(
+  tagihan: TagihanBillingState,
+  now: Date
+): TagihanBillingAction {
+  if (tagihan.status !== 'menunggu') {
+    return { type: 'noop' }
+  }
+
+  if (!tagihan.nextReminderAt || tagihan.nextReminderAt.getTime() > now.getTime()) {
+    return { type: 'noop' }
+  }
+
+  // Jika now >= tenggat_at -> penagihan harian berhenti
+  if (now.getTime() >= tagihan.tenggatAt.getTime()) {
+    return { type: 'stop_billing', nextReminderAt: null }
+  }
+
+  const berikutnya = jamPenagihanBerikut(now)
+  const nextReminderAt =
+    tanggalWib(berikutnya) <= tanggalWib(tagihan.tenggatAt) ? berikutnya : null
+
+  return {
+    type: 'send_billing',
+    nextReminderAt,
+    newReminderCount: tagihan.reminderCount + 1,
+  }
+}
+
+export interface TagihanDeadlineState {
+  status: 'menunggu' | 'diajukan' | 'terjadwal' | 'kedaluwarsa' | 'dibatalkan'
+  tenggatAt: Date
+  tenggatNotifAt: Date | null
+}
+
+export type TagihanDeadlineAction =
+  | { type: 'noop' }
+  | { type: 'notify_missed_deadline' }
+
+/** Langkah 2: Tenggat terlewat (PRD A.1.10) */
+export function evaluateTagihanDeadline(
+  tagihan: TagihanDeadlineState,
+  now: Date
+): TagihanDeadlineAction {
+  if (
+    (tagihan.status === 'menunggu' || tagihan.status === 'diajukan') &&
+    now.getTime() >= tagihan.tenggatAt.getTime() &&
+    tagihan.tenggatNotifAt === null
+  ) {
+    return { type: 'notify_missed_deadline' }
+  }
+  return { type: 'noop' }
+}
+
+export interface TagihanExpiryState {
+  status: 'menunggu' | 'diajukan' | 'terjadwal' | 'kedaluwarsa' | 'dibatalkan'
+  semesterTanggalSelesai: string // 'YYYY-MM-DD'
+}
+
+export type TagihanExpiryAction =
+  | { type: 'noop' }
+  | { type: 'expire_tagihan' }
+
+/** Langkah 3: Kedaluwarsa akhir semester (PRD A.1.10) */
+export function evaluateTagihanExpiry(
+  tagihan: TagihanExpiryState,
+  now: Date
+): TagihanExpiryAction {
+  if (
+    (tagihan.status === 'menunggu' || tagihan.status === 'diajukan') &&
+    tagihan.semesterTanggalSelesai < tanggalWib(now)
+  ) {
+    return { type: 'expire_tagihan' }
+  }
+  return { type: 'noop' }
 }

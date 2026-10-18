@@ -23,3 +23,23 @@ export function formatDateWib(isoOrDate: string | Date): string {
     month: 'short',
   }).format(date)
 }
+
+/** Format lengkap tanggal dan jam ke Bahasa Indonesia */
+export function formatDateTimeId(isoOrDate: string | Date): string {
+  const date = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate
+  const tgl = new Intl.DateTimeFormat('id-ID', {
+    timeZone: WIB_TIMEZONE,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+  const jam = formatTimeWib(date)
+  return `${tgl}, ${jam} WIB`
+}
+
+/** Format tanggal ke YYYY-MM-DD dalam zona Asia/Jakarta */
+export function toDateStringWib(isoOrDate: string | Date): string {
+  const date = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate
+  return date.toLocaleDateString('en-CA', { timeZone: WIB_TIMEZONE })
+}

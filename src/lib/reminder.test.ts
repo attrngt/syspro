@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { isQuietHour, nextAllowedPushTime } from '../../supabase/functions/_shared/quiet-hours'
-import { evaluateSessionReminder } from '../../supabase/functions/_shared/reminder-policy'
+import {
+  evaluateSessionReminder,
+  evaluateTagihanBilling,
+  evaluateTagihanDeadline,
+  evaluateTagihanExpiry,
+  jamPenagihanBerikut,
+  tanggalWib,
+} from '../../supabase/functions/_shared/reminder-policy'
 
 describe('Jam Tenang (quiet-hours)', () => {
   it('20.59 WIB bukan jam tenang, 21.00 WIB adalah jam tenang', () => {
@@ -17,6 +24,12 @@ describe('Jam Tenang (quiet-hours)', () => {
     const input = new Date('2026-10-14T16:00:00Z') // 23:00 WIB
     const next = nextAllowedPushTime(input)
     expect(next.toISOString()).toBe('2026-10-14T23:30:00.000Z') // 06:30 WIB besoknya
+  })
+
+  it('02.00 WIB hari D digeser ke 06.30 WIB hari yang sama', () => {
+    const input = new Date('2026-10-14T19:00:00Z') // 02:00 WIB
+    const next = nextAllowedPushTime(input)
+    expect(next.toISOString()).toBe('2026-10-14T23:30:00.000Z') // 06:30 WIB
   })
 })
 
@@ -98,5 +111,58 @@ describe('Kebijakan Pengingat (reminder-policy)', () => {
     if (res.type === 'defer_quiet_hours') {
       expect(res.nextReminderAt).toBeNull()
     }
+  })
+
+  it('Tagihan pengganti: penagihan harian 06.30 WIB sampai hari tenggat', () => {
+    const tenggatAt = new Date('2026-11-01T01:00:00Z')
+    const now = new Date('2026-10-15T23:30:00Z') // 16 Okt 06.30 WIB
+    const res = evaluateTagihanBilling(
+      {
+        status: 'menunggu',
+        tenggatAt,
+        nextReminderAt: now,
+        reminderCount: 0,
+      },
+      now
+    )
+    expect(res.type).toBe('send_billing')
+    if (res.type === 'send_billing') {
+      expect(res.newReminderCount).toBe(1)
+      expect(tanggalWib(res.nextReminderAt!)).toBe('2026-10-17')
+    }
+  })
+
+  it('Tagihan pengganti: penagihan berhenti saat tenggat terlewati', () => {
+    const tenggatAt = new Date('2026-11-01T01:00:00Z')
+    const now = new Date('2026-11-01T02:00:00Z') // Lewat tenggat
+    const res = evaluateTagihanBilling(
+      {
+        status: 'menunggu',
+        tenggatAt,
+        nextReminderAt: now,
+        reminderCount: 10,
+      },
+      now
+    )
+    expect(res.type).toBe('stop_billing')
+  })
+
+  it('jamPenagihanBerikut mengembalikan 06.30 WIB hari berikutnya', () => {
+    const now = new Date('2026-10-14T03:00:00Z')
+    const next = jamPenagihanBerikut(now)
+    expect(tanggalWib(next)).toBe('2026-10-15')
+  })
+
+  it('evaluateTagihanDeadline menandai notifikasi tenggat terlewat', () => {
+    const tenggatAt = new Date('2026-11-01T01:00:00Z')
+    const now = new Date('2026-11-01T02:00:00Z')
+    const res = evaluateTagihanDeadline({ status: 'menunggu', tenggatAt, tenggatNotifAt: null }, now)
+    expect(res.type).toBe('notify_missed_deadline')
+  })
+
+  it('evaluateTagihanExpiry menandai kedaluwarsa akhir semester', () => {
+    const now = new Date('2027-02-01T00:00:00Z')
+    const res = evaluateTagihanExpiry({ status: 'menunggu', semesterTanggalSelesai: '2027-01-31' }, now)
+    expect(res.type).toBe('expire_tagihan')
   })
 })
