@@ -1,4 +1,4 @@
-﻿
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
@@ -65,14 +65,14 @@ isOneToOne: false
                   ]
                 },"classes": {
                   Row: {
-                    "course_id": string,"created_at": string,"dosen_id": string,"id": string,"nama_kelas": string,"semester_id": string
+                    "course_id": string,"created_at": string,"dosen_id": string,"group_id": string | null,"id": string,"jumlah_pertemuan": number,"semester_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "course_id": string,"created_at"?: string,"dosen_id": string,"id"?: string,"nama_kelas": string,"semester_id": string
+                    "course_id": string,"created_at"?: string,"dosen_id": string,"group_id"?: string | null,"id"?: string,"jumlah_pertemuan"?: number,"semester_id": string
                   }
                   Update: {
-                    "course_id"?: string,"created_at"?: string,"dosen_id"?: string,"id"?: string,"nama_kelas"?: string,"semester_id"?: string
+                    "course_id"?: string,"created_at"?: string,"dosen_id"?: string,"group_id"?: string | null,"id"?: string,"jumlah_pertemuan"?: number,"semester_id"?: string
                   }
                   Relationships: [
                     {
@@ -88,12 +88,32 @@ isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "classes_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "student_groups"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "classes_semester_id_fkey"
       columns: ["semester_id"]
 isOneToOne: false
       referencedRelation: "semesters"
       referencedColumns: ["id"]
     }
+                  ]
+                },"cohorts": {
+                  Row: {
+                    "aktif": boolean,"created_at": string,"id": string,"nama": string,"tahun": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "aktif"?: boolean,"created_at"?: string,"id"?: string,"nama": string,"tahun": number
+                  }
+                  Update: {
+                    "aktif"?: boolean,"created_at"?: string,"id"?: string,"nama"?: string,"tahun"?: number
+                  }
+                  Relationships: [
+                    
                   ]
                 },"courses": {
                   Row: {
@@ -111,14 +131,14 @@ isOneToOne: false
                   ]
                 },"enrollments": {
                   Row: {
-                    "class_id": string,"created_at": string,"id": string,"mahasiswa_id": string
+                    "class_id": string,"created_at": string,"id": string,"mahasiswa_id": string,"sumber": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "class_id": string,"created_at"?: string,"id"?: string,"mahasiswa_id": string
+                    "class_id": string,"created_at"?: string,"id"?: string,"mahasiswa_id": string,"sumber"?: string
                   }
                   Update: {
-                    "class_id"?: string,"created_at"?: string,"id"?: string,"mahasiswa_id"?: string
+                    "class_id"?: string,"created_at"?: string,"id"?: string,"mahasiswa_id"?: string,"sumber"?: string
                   }
                   Relationships: [
                     {
@@ -137,14 +157,14 @@ isOneToOne: false
                   ]
                 },"holidays": {
                   Row: {
-                    "created_at": string,"id": string,"keterangan": string,"tanggal": string
+                    "created_at": string,"id": string,"is_libur_kuliah": boolean,"keterangan": string,"tanggal": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"keterangan": string,"tanggal": string
+                    "created_at"?: string,"id"?: string,"is_libur_kuliah"?: boolean,"keterangan": string,"tanggal": string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"keterangan"?: string,"tanggal"?: string
+                    "created_at"?: string,"id"?: string,"is_libur_kuliah"?: boolean,"keterangan"?: string,"tanggal"?: string
                   }
                   Relationships: [
                     
@@ -205,17 +225,23 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "auth_user_id": string | null,"created_at": string,"id": string,"member_id": string | null,"nama": string,"role": string
+                    "auth_user_id": string | null,"created_at": string,"group_id": string | null,"id": string,"member_id": string | null,"nama": string,"role": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "auth_user_id"?: string | null,"created_at"?: string,"id"?: string,"member_id"?: string | null,"nama": string,"role": string
+                    "auth_user_id"?: string | null,"created_at"?: string,"group_id"?: string | null,"id"?: string,"member_id"?: string | null,"nama": string,"role": string
                   }
                   Update: {
-                    "auth_user_id"?: string | null,"created_at"?: string,"id"?: string,"member_id"?: string | null,"nama"?: string,"role"?: string
+                    "auth_user_id"?: string | null,"created_at"?: string,"group_id"?: string | null,"id"?: string,"member_id"?: string | null,"nama"?: string,"role"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "profiles_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "student_groups"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "profiles_member_id_fkey"
       columns: ["member_id"]
 isOneToOne: true
@@ -285,21 +311,33 @@ isOneToOne: false
                   ]
                 },"sessions": {
                   Row: {
-                    "class_id": string,"created_at": string,"cutoff_at": string,"escalated_at": string | null,"id": string,"mode": string | null,"mode_source": string | null,"mulai_at": string,"next_reminder_at": string | null,"reminder_count": number,"schedule_id": string,"selesai_at": string,"status": string,"tanggal": string,"updated_at": string
+                    "cancel_reason": string | null,"cancel_source": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"class_id": string,"created_at": string,"cutoff_at": string,"escalated_at": string | null,"id": string,"jenis": string | null,"link_online": string | null,"mode": string | null,"mode_source": string | null,"mulai_at": string,"next_reminder_at": string | null,"pengganti_dari_id": string | null,"pertemuan_ke": number | null,"reminder_count": number,"restored_at": string | null,"ruangan": string | null,"schedule_id": string,"selesai_at": string,"status": string,"tanggal": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "class_id": string,"created_at"?: string,"cutoff_at": string,"escalated_at"?: string | null,"id"?: string,"mode"?: string | null,"mode_source"?: string | null,"mulai_at": string,"next_reminder_at"?: string | null,"reminder_count"?: number,"schedule_id": string,"selesai_at": string,"status"?: string,"tanggal": string,"updated_at"?: string
+                    "cancel_reason"?: string | null,"cancel_source"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"class_id": string,"created_at"?: string,"cutoff_at": string,"escalated_at"?: string | null,"id"?: string,"jenis"?: string | null,"link_online"?: string | null,"mode"?: string | null,"mode_source"?: string | null,"mulai_at": string,"next_reminder_at"?: string | null,"pengganti_dari_id"?: string | null,"pertemuan_ke"?: number | null,"reminder_count"?: number,"restored_at"?: string | null,"ruangan"?: string | null,"schedule_id": string,"selesai_at": string,"status"?: string,"tanggal": string,"updated_at"?: string
                   }
                   Update: {
-                    "class_id"?: string,"created_at"?: string,"cutoff_at"?: string,"escalated_at"?: string | null,"id"?: string,"mode"?: string | null,"mode_source"?: string | null,"mulai_at"?: string,"next_reminder_at"?: string | null,"reminder_count"?: number,"schedule_id"?: string,"selesai_at"?: string,"status"?: string,"tanggal"?: string,"updated_at"?: string
+                    "cancel_reason"?: string | null,"cancel_source"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"class_id"?: string,"created_at"?: string,"cutoff_at"?: string,"escalated_at"?: string | null,"id"?: string,"jenis"?: string | null,"link_online"?: string | null,"mode"?: string | null,"mode_source"?: string | null,"mulai_at"?: string,"next_reminder_at"?: string | null,"pengganti_dari_id"?: string | null,"pertemuan_ke"?: number | null,"reminder_count"?: number,"restored_at"?: string | null,"ruangan"?: string | null,"schedule_id"?: string,"selesai_at"?: string,"status"?: string,"tanggal"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "sessions_cancelled_by_fkey"
+      columns: ["cancelled_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "sessions_class_id_fkey"
       columns: ["class_id"]
 isOneToOne: false
       referencedRelation: "classes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sessions_pengganti_dari_id_fkey"
+      columns: ["pengganti_dari_id"]
+isOneToOne: false
+      referencedRelation: "sessions"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "sessions_schedule_id_fkey"
@@ -309,13 +347,121 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"student_groups": {
+                  Row: {
+                    "cohort_id": string,"created_at": string,"id": string,"nama": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cohort_id": string,"created_at"?: string,"id"?: string,"nama": string
+                  }
+                  Update: {
+                    "cohort_id"?: string,"created_at"?: string,"id"?: string,"nama"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "student_groups_cohort_id_fkey"
+      columns: ["cohort_id"]
+isOneToOne: false
+      referencedRelation: "cohorts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"tagihan_pengganti": {
+                  Row: {
+                    "class_id": string,"created_at": string,"diajukan_at": string | null,"diajukan_oleh": string | null,"dijadwalkan_at": string | null,"dijadwalkan_oleh": string | null,"ditolak_alasan": string | null,"ditolak_at": string | null,"dosen_id": string,"id": string,"next_reminder_at": string | null,"pertemuan_ke": number,"reminder_count": number,"session_id": string,"session_pengganti_id": string | null,"status": string,"tenggat_at": string,"tenggat_notif_at": string | null,"usulan_mulai_at": string | null,"usulan_selesai_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "class_id": string,"created_at"?: string,"diajukan_at"?: string | null,"diajukan_oleh"?: string | null,"dijadwalkan_at"?: string | null,"dijadwalkan_oleh"?: string | null,"ditolak_alasan"?: string | null,"ditolak_at"?: string | null,"dosen_id": string,"id"?: string,"next_reminder_at"?: string | null,"pertemuan_ke": number,"reminder_count"?: number,"session_id": string,"session_pengganti_id"?: string | null,"status"?: string,"tenggat_at": string,"tenggat_notif_at"?: string | null,"usulan_mulai_at"?: string | null,"usulan_selesai_at"?: string | null
+                  }
+                  Update: {
+                    "class_id"?: string,"created_at"?: string,"diajukan_at"?: string | null,"diajukan_oleh"?: string | null,"dijadwalkan_at"?: string | null,"dijadwalkan_oleh"?: string | null,"ditolak_alasan"?: string | null,"ditolak_at"?: string | null,"dosen_id"?: string,"id"?: string,"next_reminder_at"?: string | null,"pertemuan_ke"?: number,"reminder_count"?: number,"session_id"?: string,"session_pengganti_id"?: string | null,"status"?: string,"tenggat_at"?: string,"tenggat_notif_at"?: string | null,"usulan_mulai_at"?: string | null,"usulan_selesai_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tagihan_pengganti_class_id_fkey"
+      columns: ["class_id"]
+isOneToOne: false
+      referencedRelation: "classes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tagihan_pengganti_diajukan_oleh_fkey"
+      columns: ["diajukan_oleh"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tagihan_pengganti_dijadwalkan_oleh_fkey"
+      columns: ["dijadwalkan_oleh"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tagihan_pengganti_dosen_id_fkey"
+      columns: ["dosen_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tagihan_pengganti_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: true
+      referencedRelation: "sessions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tagihan_pengganti_session_pengganti_id_fkey"
+      columns: ["session_pengganti_id"]
+isOneToOne: true
+      referencedRelation: "sessions"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            "app_profile_id":
+            "admin_cancel_session":
+{ Args: { "p_keterangan"?: string,"p_session_id": string }; Returns: undefined
+                           },
+"admin_copy_semester":
+{ Args: { "p_from": string,"p_to": string }; Returns: number
+                           },
+"admin_delete_holiday":
+{ Args: { "p_tanggal": string }; Returns: undefined
+                           },
+"admin_jadwalkan_pengganti":
+{ Args: { "p_link_online": string,"p_mulai_at": string,"p_ruangan": string,"p_selesai_at": string,"p_tagihan_id": string }; Returns: string
+                           },
+"admin_pindah_kelompok":
+{ Args: { "p_alasan": string,"p_group_id": string,"p_profile_id": string }; Returns: undefined
+                           },
+"admin_preview_libur":
+{ Args: { "p_tanggal": string }; Returns: {
+              "akan_dibatalkan": number,"sudah_berlangsung": number
+            }[]
+                           },
+"admin_restore_session":
+{ Args: { "p_session_id": string }; Returns: undefined
+                           },
+"admin_set_lokasi_sesi":
+{ Args: { "p_link_online": string,"p_ruangan": string,"p_session_id": string }; Returns: undefined
+                           },
+"admin_setujui_pengganti":
+{ Args: { "p_link_online": string,"p_ruangan": string,"p_tagihan_id": string }; Returns: string
+                           },
+"admin_tolak_pengganti":
+{ Args: { "p_alasan": string,"p_tagihan_id": string }; Returns: undefined
+                           },
+"admin_upsert_holiday":
+{ Args: { "p_keterangan": string,"p_libur_kuliah": boolean,"p_tanggal": string }; Returns: number
+                           },
+"ajukan_pengganti":
+{ Args: { "p_mulai_at": string,"p_selesai_at": string,"p_tagihan_id": string }; Returns: undefined
+                           },
+"app_profile_id":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
 "app_role":
@@ -324,11 +470,44 @@ isOneToOne: false
 "apply_default_mode":
 { Args: { "p_session_id": string }; Returns: boolean
                            },
+"batalkan_sesi_internal":
+{ Args: { "p_actor": string,"p_keterangan": string,"p_session_id": string,"p_source": string }; Returns: boolean
+                           },
+"buat_sesi_pengganti":
+{ Args: { "p_actor": string,"p_link_online": string,"p_mulai_at": string,"p_ruangan": string,"p_selesai_at": string,"p_tagihan_id": string }; Returns: string
+                           },
+"buat_tagihan":
+{ Args: { "p_session_id": string }; Returns: undefined
+                           },
+"buka_ulang_tagihan":
+{ Args: { "p_session_pengganti_id": string }; Returns: undefined
+                           },
+"daftar_penerima_kelas":
+{ Args: { "p_class_id": string }; Returns: string[]
+                           },
+"format_lokasi":
+{ Args: { "p_link": string,"p_ruangan": string }; Returns: string
+                           },
+"format_tanggal_jam_id":
+{ Args: { "t": string }; Returns: string
+                           },
 "generate_sessions":
 { Args: { "p_semester_id": string }; Returns: number
                            },
+"jam_penagihan_berikut":
+{ Args: { "t": string }; Returns: string
+                           },
+"mahasiswa_ikut_kelas":
+{ Args: { "p_class_id": string }; Returns: boolean
+                           },
+"nama_kelompok":
+{ Args: { "p_class_id": string }; Returns: string
+                           },
 "set_session_mode":
 { Args: { "p_mode": string,"p_session_id": string }; Returns: undefined
+                           },
+"validasi_jadwal_pengganti":
+{ Args: { "p_class_id": string,"p_mulai_at": string,"p_selesai_at": string }; Returns: undefined
                            }
           }
           Enums: {

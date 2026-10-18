@@ -1,8 +1,8 @@
 -- =========================================================
--- SEED DATA DEVELOPMENT SYSPRO (PRD 8.9 & AGENTS.md 12.3)
+-- SEED DATA DEVELOPMENT SYSPRO (PRD 8.12 & AGENTS.md 12.3)
 -- =========================================================
 
--- 1. Buat akun Auth untuk Admin, 2 Dosen, dan 2 Mahasiswa pertama (Password: password123)
+-- 1. Buat akun Auth untuk Admin, 2 Dosen, dan 1 Mahasiswa pertama (Password: password123)
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data
@@ -10,77 +10,152 @@ insert into auth.users (
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@prodi.internal', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
   ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '9000000001@anggota.internal', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
   ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '9000000002@anggota.internal', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
-  ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '9000000003@anggota.internal', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}');
+  ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '9000000101@anggota.internal', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}')
+on conflict (id) do nothing;
 
--- 2. Members: 2 Dosen + 10 Mahasiswa (kode diawali 9)
+-- 2. Angkatan 2025
+insert into public.cohorts (id, tahun, nama, aktif) values
+  ('11111111-0000-0000-0000-000000002025', 2025, 'Angkatan 2025', true)
+on conflict (id) do nothing;
+
+-- 3. Kelompok A, B, C dalam Angkatan 2025
+insert into public.student_groups (id, cohort_id, nama) values
+  ('22222222-0000-0000-0000-00000000000a', '11111111-0000-0000-0000-000000002025', 'A'),
+  ('22222222-0000-0000-0000-00000000000b', '11111111-0000-0000-0000-000000002025', 'B'),
+  ('22222222-0000-0000-0000-00000000000c', '11111111-0000-0000-0000-000000002025', 'C')
+on conflict (id) do nothing;
+
+-- 4. Members & Profiles: 2 Dosen
 insert into public.members (id, kode, nama, peran, nim_nidn, aktif, activated_at) values
   ('10000000-0000-0000-0000-000000000001', '9000000001', 'Dr. Hendra Wijaya', 'dosen', '0011223301', true, now()),
-  ('10000000-0000-0000-0000-000000000002', '9000000002', 'Maya Sari, M.Sn.', 'dosen', '0011223302', true, now()),
-  ('10000000-0000-0000-0000-000000000003', '9000000003', 'Budi Santoso', 'mahasiswa', '2401001', true, now()),
-  ('10000000-0000-0000-0000-000000000004', '9000000004', 'Siti Aminah', 'mahasiswa', '2401002', true, null),
-  ('10000000-0000-0000-0000-000000000005', '9000000005', 'Rizky Pratama', 'mahasiswa', '2401003', true, null),
-  ('10000000-0000-0000-0000-000000000006', '9000000006', 'Dewi Lestari', 'mahasiswa', '2401004', true, null),
-  ('10000000-0000-0000-0000-000000000007', '9000000007', 'Andi Saputra', 'mahasiswa', '2401005', true, null),
-  ('10000000-0000-0000-0000-000000000008', '9000000008', 'Nadia Putri', 'mahasiswa', '2401006', true, null),
-  ('10000000-0000-0000-0000-000000000009', '9000000009', 'Fajar Nugroho', 'mahasiswa', '2401007', true, null),
-  ('10000000-0000-0000-0000-000000000010', '9000000010', 'Citra Kirana', 'mahasiswa', '2401008', true, null),
-  ('10000000-0000-0000-0000-000000000011', '9000000011', 'Gilang Ramadhan', 'mahasiswa', '2401009', true, null),
-  ('10000000-0000-0000-0000-000000000012', '9000000012', 'Putri Ayu', 'mahasiswa', '2401010', true, null);
+  ('10000000-0000-0000-0000-000000000002', '9000000002', 'Maya Sari, M.Sn.', 'dosen', '0011223302', true, now())
+on conflict (id) do nothing;
 
--- 3. Profiles: 1 Admin + 2 Dosen + 10 Mahasiswa
-insert into public.profiles (id, auth_user_id, member_id, role, nama) values
-  ('20000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000001', null, 'admin', 'Admin Prodi'),
-  ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'dosen', 'Dr. Hendra Wijaya'),
-  ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000002', 'dosen', 'Maya Sari, M.Sn.'),
-  ('20000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000003', 'mahasiswa', 'Budi Santoso'),
-  ('20000000-0000-0000-0000-000000000004', null, '10000000-0000-0000-0000-000000000004', 'mahasiswa', 'Siti Aminah'),
-  ('20000000-0000-0000-0000-000000000005', null, '10000000-0000-0000-0000-000000000005', 'mahasiswa', 'Rizky Pratama'),
-  ('20000000-0000-0000-0000-000000000006', null, '10000000-0000-0000-0000-000000000006', 'mahasiswa', 'Dewi Lestari'),
-  ('20000000-0000-0000-0000-000000000007', null, '10000000-0000-0000-0000-000000000007', 'mahasiswa', 'Andi Saputra'),
-  ('20000000-0000-0000-0000-000000000008', null, '10000000-0000-0000-0000-000000000008', 'mahasiswa', 'Nadia Putri'),
-  ('20000000-0000-0000-0000-000000000009', null, '10000000-0000-0000-0000-000000000009', 'mahasiswa', 'Fajar Nugroho'),
-  ('20000000-0000-0000-0000-000000000010', null, '10000000-0000-0000-0000-000000000010', 'mahasiswa', 'Citra Kirana'),
-  ('20000000-0000-0000-0000-000000000011', null, '10000000-0000-0000-0000-000000000011', 'mahasiswa', 'Gilang Ramadhan'),
-  ('20000000-0000-0000-0000-000000000012', null, '10000000-0000-0000-0000-000000000012', 'mahasiswa', 'Putri Ayu');
+insert into public.profiles (id, auth_user_id, member_id, role, nama, group_id) values
+  ('20000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000001', null, 'admin', 'Admin Prodi', null),
+  ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'dosen', 'Dr. Hendra Wijaya', null),
+  ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000002', 'dosen', 'Maya Sari, M.Sn.', null)
+on conflict (id) do nothing;
 
--- 4. Semester Aktif (1 Semester)
+-- 5. 150 Mahasiswa Dummy (50 kelompok A, 50 kelompok B, 50 kelompok C)
+do $$
+declare
+  i int;
+  v_member_id uuid;
+  v_profile_id uuid;
+  v_kode text;
+  v_nama text;
+  v_nim text;
+  v_group_id uuid;
+  v_auth uuid;
+begin
+  for i in 1..150 loop
+    v_member_id := ('10000000-0000-0000-0000-' || lpad(to_hex(i + 100), 12, '0'))::uuid;
+    v_profile_id := ('20000000-0000-0000-0000-' || lpad(to_hex(i + 100), 12, '0'))::uuid;
+    v_kode := '9000' || lpad((100 + i)::text, 6, '0');
+    v_nama := 'Mahasiswa ' || i;
+    v_nim := '2501' || lpad(i::text, 4, '0');
+
+    if i <= 50 then
+      v_group_id := '22222222-0000-0000-0000-00000000000a';
+    elsif i <= 100 then
+      v_group_id := '22222222-0000-0000-0000-00000000000b';
+    else
+      v_group_id := '22222222-0000-0000-0000-00000000000c';
+    end if;
+
+    if i = 1 then
+      v_auth := '00000000-0000-0000-0000-000000000004';
+      v_nama := 'Budi Santoso';
+    else
+      v_auth := null;
+    end if;
+
+    insert into public.members (id, kode, nama, peran, nim_nidn, aktif, activated_at)
+    values (v_member_id, v_kode, v_nama, 'mahasiswa', v_nim, true, case when i = 1 then now() else null end)
+    on conflict (id) do nothing;
+
+    insert into public.profiles (id, auth_user_id, member_id, role, nama, group_id)
+    values (v_profile_id, v_auth, v_member_id, 'mahasiswa', v_nama, v_group_id)
+    on conflict (id) do nothing;
+  end loop;
+end $$;
+
+-- 6. 1 Semester Aktif dengan tanggal mulai di masa depan (agar bisa di-generate)
 insert into public.semesters (id, nama, tanggal_mulai, tanggal_selesai, aktif) values
-  ('30000000-0000-0000-0000-000000000001', 'Ganjil 2026/2027', '2026-09-01', '2027-01-31', true);
+  ('30000000-0000-0000-0000-000000000001', 'Ganjil 2026/2027',
+   (now() at time zone 'Asia/Jakarta')::date + 7,
+   (now() at time zone 'Asia/Jakarta')::date + 140,
+   true)
+on conflict (id) do nothing;
 
--- 5. Courses (3 Mata Kuliah)
+-- 7. 9 Mata Kuliah
 insert into public.courses (id, kode, nama, sks) values
   ('40000000-0000-0000-0000-000000000001', 'PM101', 'Produksi Video Lanjut', 3),
   ('40000000-0000-0000-0000-000000000002', 'PM102', 'Storytelling Multimedia', 3),
-  ('40000000-0000-0000-0000-000000000003', 'PM103', 'Tata Suara dan Audio Digital', 2);
+  ('40000000-0000-0000-0000-000000000003', 'PM103', 'Tata Suara dan Audio Digital', 2),
+  ('40000000-0000-0000-0000-000000000004', 'PM104', 'Sinematografi Digital', 3),
+  ('40000000-0000-0000-0000-000000000005', 'PM105', 'Animasi dan Motion Graphics', 3),
+  ('40000000-0000-0000-0000-000000000006', 'PM106', 'Manajemen Produksi Media', 2),
+  ('40000000-0000-0000-0000-000000000007', 'PM107', 'Penulisan Naskah Media Kreatif', 3),
+  ('40000000-0000-0000-0000-000000000008', 'PM108', 'Pascaproduksi dan Editing', 3),
+  ('40000000-0000-0000-0000-000000000009', 'PM109', 'Etika dan Hukum Media', 2)
+on conflict (id) do nothing;
 
--- 6. Classes (4 Kelas)
-insert into public.classes (id, course_id, semester_id, dosen_id, nama_kelas) values
-  ('50000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'A'),
-  ('50000000-0000-0000-0000-000000000002', '40000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'B'),
-  ('50000000-0000-0000-0000-000000000003', '40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000002', 'A'),
-  ('50000000-0000-0000-0000-000000000004', '40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000002', 'A');
+-- 8. 27 Kelas (9 Mata Kuliah x 3 Kelompok) & Jadwal Rutin
+-- Trigger classes_enroll_kelompok otomatis membuat enrollment untuk seluruh mahasiswa di kelompok tersebut!
+do $$
+declare
+  v_mk record;
+  v_grp record;
+  v_dosen uuid;
+  v_class_id uuid;
+  v_sched_id uuid;
+  v_idx int := 0;
+  v_hari smallint;
+  v_jam_mulai time;
+  v_jam_selesai time;
+begin
+  for v_mk in select id, row_number() over (order by id) as rn from public.courses loop
+    for v_grp in select id, nama from public.student_groups order by nama loop
+      v_idx := v_idx + 1;
+      v_class_id := ('50000000-0000-0000-0000-' || lpad(to_hex(v_idx), 12, '0'))::uuid;
+      v_sched_id := ('60000000-0000-0000-0000-' || lpad(to_hex(v_idx), 12, '0'))::uuid;
+      
+      -- Selang-seling dosen 1 dan 2
+      if (v_idx % 2 = 1) then
+        v_dosen := '20000000-0000-0000-0000-000000000001';
+      else
+        v_dosen := '20000000-0000-0000-0000-000000000002';
+      end if;
 
--- 7. Class Schedules (Jadwal Rutin)
-insert into public.class_schedules (id, class_id, hari, jam_mulai, jam_selesai) values
-  ('60000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 1, '08:00', '10:30'), -- Senin
-  ('60000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000002', 2, '10:00', '12:30'), -- Selasa
-  ('60000000-0000-0000-0000-000000000003', '50000000-0000-0000-0000-000000000003', 3, '13:00', '15:30'), -- Rabu
-  ('60000000-0000-0000-0000-000000000004', '50000000-0000-0000-0000-000000000004', 4, '09:00', '10:40'); -- Kamis
+      v_hari := ((v_idx % 5) + 1)::smallint; -- Senin s/d Jumat (1..5)
+      if (v_grp.nama = 'A') then
+        v_jam_mulai := '08:00'::time;
+        v_jam_selesai := '10:30'::time;
+      elsif (v_grp.nama = 'B') then
+        v_jam_mulai := '10:45'::time;
+        v_jam_selesai := '13:15'::time;
+      else
+        v_jam_mulai := '13:30'::time;
+        v_jam_selesai := '16:00'::time;
+      end if;
 
--- 8. Enrollments (10 Mahasiswa masuk ke Kelas A Produksi Video Lanjut)
-insert into public.enrollments (class_id, mahasiswa_id) values
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000003'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000004'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000006'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000007'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000008'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000009'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000010'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000011'),
-  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000012');
+      insert into public.classes (id, course_id, semester_id, group_id, dosen_id, jumlah_pertemuan)
+      values (v_class_id, v_mk.id, '30000000-0000-0000-0000-000000000001', v_grp.id, v_dosen, 16)
+      on conflict (id) do nothing;
 
--- 9. Holidays (2 Hari Libur)
-insert into public.holidays (tanggal, keterangan) values
-  ('2026-12-25', 'Hari Raya Natal'),
-  ('2027-01-01', 'Tahun Baru Masehi');
+      insert into public.class_schedules (id, class_id, hari, jam_mulai, jam_selesai)
+      values (v_sched_id, v_class_id, v_hari, v_jam_mulai, v_jam_selesai)
+      on conflict (id) do nothing;
+    end loop;
+  end loop;
+end $$;
+
+-- 9. 2 Tanggal Libur (satu is_libur_kuliah = true, satu false)
+insert into public.holidays (tanggal, keterangan, is_libur_kuliah) values
+  (((now() at time zone 'Asia/Jakarta')::date + 14), 'Hari Libur Perkuliahan Nasional', true),
+  (((now() at time zone 'Asia/Jakarta')::date + 28), 'Peringatan Hari Besar Non-Akademik', false)
+on conflict (tanggal) do update
+  set keterangan = excluded.keterangan,
+      is_libur_kuliah = excluded.is_libur_kuliah;
