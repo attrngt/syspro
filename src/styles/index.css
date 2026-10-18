@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  /* Token warna status sesuai PRD 12.2 & AGENTS.md 11.3 */
+  --color-status-online: #2563eb;    /* Biru Solid */
+  --color-status-offline: #16a34a;   /* Hijau Solid */
+  --color-status-none: #6b7280;      /* Abu-abu Solid (Tidak Ada) */
+  --color-status-waiting: #ca8a04;   /* Kuning Outline (Menunggu) */
+}
+
+@layer base {
+  body {
+    @apply bg-white text-neutral-900 antialiased selection:bg-neutral-900 selection:text-white;
+  }
+}
