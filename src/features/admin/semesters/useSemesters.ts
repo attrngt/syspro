@@ -56,3 +56,45 @@ export function useDeleteSemester() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['semesters'] }),
   })
 }
+
+export function useCopySemester() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      fromSemesterId,
+      toSemesterId,
+    }: {
+      fromSemesterId: string
+      toSemesterId: string
+    }) => {
+      const { data, error } = await supabase.rpc('admin_copy_semester', {
+        p_from: fromSemesterId,
+        p_to: toSemesterId,
+      })
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['classes'] })
+      void qc.invalidateQueries({ queryKey: ['admin-stats'] })
+    },
+  })
+}
+
+export function useGenerateSessions() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (semesterId: string) => {
+      const { data, error } = await supabase.rpc('generate_sessions', {
+        p_semester_id: semesterId,
+      })
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['sessions'] })
+      void qc.invalidateQueries({ queryKey: ['admin-sessions'] })
+      void qc.invalidateQueries({ queryKey: ['admin-stats'] })
+    },
+  })
+}

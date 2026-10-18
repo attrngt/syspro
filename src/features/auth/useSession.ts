@@ -11,6 +11,7 @@ export interface UserProfile {
   role: UserRole
   nama: string
   member_id: string | null
+  group_id?: string | null
 }
 
 export interface AuthContextValue {

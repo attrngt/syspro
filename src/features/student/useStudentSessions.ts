@@ -12,12 +12,25 @@ export interface StudentSessionItem {
   mode: string | null
   mode_source: string | null
   status: string
+  pertemuan_ke: number
+  jenis: string
+  ruangan?: string | null
+  link_online?: string | null
+  pengganti_dari_id?: string | null
+  cancel_reason?: string | null
   classes: {
     id: string
-    nama_kelas: string
+    jumlah_pertemuan: number
     courses: {
       kode: string
       nama: string
+    } | null
+    student_groups: {
+      id: string
+      nama: string
+      cohorts: {
+        tahun: number
+      } | null
     } | null
     profiles: {
       nama: string
@@ -53,15 +66,17 @@ export function useStudentSchedule() {
   const isOnline = useOnlineStatus()
 
   const query = useQuery({
-    queryKey: ['student-sessions', profile?.id],
+    queryKey: ['student-sessions-all', profile?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sessions')
         .select(`
           id, tanggal, mulai_at, selesai_at, mode, mode_source, status,
+          pertemuan_ke, jenis, ruangan, link_online, pengganti_dari_id, cancel_reason,
           classes (
-            id, nama_kelas,
+            id, jumlah_pertemuan,
             courses ( kode, nama ),
+            student_groups ( id, nama, cohorts ( tahun ) ),
             profiles!classes_dosen_id_fkey ( nama )
           )
         `)
@@ -77,13 +92,13 @@ export function useStudentSchedule() {
         // Abaikan jika storage penuh
       }
 
-      return data as StudentSessionItem[]
+      return (data as unknown) as StudentSessionItem[]
     },
     enabled: !!profile?.id,
     initialData: () => {
       try {
         const raw = localStorage.getItem(CACHE_KEY_DATA)
-        return raw ? (JSON.parse(raw) as StudentSessionItem[]) : undefined
+        return raw ? ((JSON.parse(raw) as unknown) as StudentSessionItem[]) : undefined
       } catch {
         return undefined
       }

@@ -68,7 +68,7 @@ export function LecturerSchedulePage() {
                 />
               </div>
               <div className="font-bold text-sm">
-                {s.classes?.courses?.nama} (Kelas {s.classes?.nama_kelas})
+                {s.classes?.courses?.nama} (Kelas {s.classes?.student_groups ? `${s.classes.student_groups.cohorts?.tahun ?? ''} ${s.classes.student_groups.nama}`.trim() : '-'})
               </div>
             </Link>
           ))}
