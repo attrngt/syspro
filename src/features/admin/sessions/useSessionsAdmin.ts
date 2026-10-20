@@ -50,23 +50,23 @@ export function useSessionsAdmin(semesterId?: string) {
       let query = supabase
         .from('sessions')
         .select(`
-          id, tanggal, mulai_at, selesai_at, pertemuan_ke, jenis,
-          mode, mode_source, status, cutoff_at, ruangan, link_online,
-          cancelled_at, cancel_reason, cancel_source, restored_at, pengganti_dari_id,
-          classes (
-            id, jumlah_pertemuan,
-            courses ( id, kode, nama ),
-            profiles!classes_dosen_id_fkey ( id, nama ),
-            student_groups ( id, nama, cohorts ( id, tahun, nama ) )
-          )
-        `)
+  id, tanggal, mulai_at, selesai_at, pertemuan_ke, jenis,
+  mode, mode_source, status, cutoff_at, ruangan, link_online,
+  cancelled_at, cancel_reason, cancel_source, restored_at, pengganti_dari_id,
+  classes!inner (
+    id, semester_id, jumlah_pertemuan,
+    courses ( id, kode, nama ),
+    profiles!classes_dosen_id_fkey ( id, nama ),
+    student_groups ( id, nama, cohorts ( id, tahun, nama ) )
+  )
+`)
         .order('mulai_at', { ascending: true })
 
       if (semesterId) {
         query = query.eq('classes.semester_id', semesterId)
       }
 
-      const { data, error } = await query.limit(200)
+      const { data, error } = await query.limit(1000)
       if (error) throw new Error(error.message)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- join types
       return (data as any) as AdminSessionItem[]
@@ -97,9 +97,9 @@ export function useCancelSessionAdmin() {
   return useMutation({
     mutationFn: async ({ sessionId, alasan }: { sessionId: string; alasan?: string }) => {
       const { error } = await supabase.rpc('admin_cancel_session', {
-        p_session_id: sessionId,
-        p_alasan: alasan || null,
-      })
+  p_session_id: sessionId,
+  p_keterangan: alasan?.trim() || undefined,
+})
       if (error) throw new Error(error.message)
     },
     onSuccess: () => {
