@@ -98,7 +98,7 @@ export function useCancelSessionAdmin() {
     mutationFn: async ({ sessionId, alasan }: { sessionId: string; alasan?: string }) => {
       const { error } = await supabase.rpc('admin_cancel_session', {
         p_session_id: sessionId,
-        p_alasan: alasan || null,
+        p_keterangan: alasan?.trim() || null,
       })
       if (error) throw new Error(error.message)
     },
