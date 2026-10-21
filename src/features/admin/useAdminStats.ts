@@ -12,20 +12,19 @@ export interface PerluPerhatianSession {
   pertemuan_ke: number
   classes: {
     jumlah_pertemuan: number
-    courses: {
-      kode: string
-      nama: string
-    } | null
-    student_groups: {
-      nama: string
-      cohorts: {
-        tahun: number
-      } | null
-    } | null
-    profiles: {
-      nama: string
-    } | null
+    courses: { kode: string; nama: string } | null
+    student_groups: { nama: string; cohorts: { tahun: number } | null } | null
+    profiles: { nama: string } | null
   } | null
+}
+
+const KOSONG = {
+  hariIni: 0,
+  menunggu: 0,
+  defaultOffline: 0,
+  dibatalkan: 0,
+  kekuranganPertemuan: 0,
+  perluPerhatian: [] as PerluPerhatianSession[],
 }
 
 export function useAdminStats() {
@@ -34,29 +33,45 @@ export function useAdminStats() {
     queryFn: async () => {
       const today = toDateStringWib(new Date())
 
+      // 1. Semester aktif
+      const { data: semesterAktif, error: semErr } = await supabase
+        .from('semesters')
+        .select('id')
+        .eq('aktif', true)
+        .maybeSingle()
+      if (semErr) throw new Error(semErr.message)
+      if (!semesterAktif) return KOSONG
+
+      // 2. Kelas di semester aktif
+      const { data: kelas, error: kelasErr } = await supabase
+        .from('classes')
+        .select('id, jumlah_pertemuan')
+        .eq('semester_id', semesterAktif.id)
+      if (kelasErr) throw new Error(kelasErr.message)
+      const classIds = (kelas ?? []).map((c) => c.id)
+      if (classIds.length === 0) return KOSONG
+
+      // 3. Semua query sesi dibatasi ke kelas semester aktif
       const [
         sessionsTodayRes,
         waitingRes,
         defaultRes,
         cancelledRes,
-        classesRes,
         sessionsCountRes,
         attentionRes,
       ] = await Promise.all([
-        supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('tanggal', today),
-        supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('status', 'menunggu'),
-        supabase
-          .from('sessions')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'default_offline'),
-        supabase
-          .from('sessions')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'dibatalkan'),
-        supabase.from('classes').select('id, jumlah_pertemuan'),
-        supabase.from('sessions').select('class_id'),
-        supabase
-          .from('sessions')
+        supabase.from('sessions').select('*', { count: 'exact', head: true })
+          .in('class_id', classIds).eq('tanggal', today),
+        supabase.from('sessions').select('*', { count: 'exact', head: true })
+          .in('class_id', classIds).eq('status', 'menunggu'),
+        supabase.from('sessions').select('*', { count: 'exact', head: true })
+          .in('class_id', classIds).eq('status', 'default_offline'),
+        supabase.from('sessions').select('*', { count: 'exact', head: true })
+          .in('class_id', classIds).eq('status', 'dibatalkan'),
+        supabase.from('sessions').select('class_id')
+          .in('class_id', classIds).neq('status', 'dibatalkan')
+          .limit(10000),
+        supabase.from('sessions')
           .select(`
             id, tanggal, mulai_at, selesai_at, mode, status, pertemuan_ke,
             classes (
@@ -66,23 +81,22 @@ export function useAdminStats() {
               profiles!classes_dosen_id_fkey ( nama )
             )
           `)
+          .in('class_id', classIds)
           .in('status', ['menunggu', 'default_offline'])
           .order('mulai_at', { ascending: true })
           .limit(10),
       ])
 
-      // Hitung kekurangan pertemuan
+      // 4. Hitung kekurangan pertemuan (sesi aktif per kelas)
       const sessionCountsPerClass = new Map<string, number>()
       for (const s of sessionsCountRes.data ?? []) {
         sessionCountsPerClass.set(s.class_id, (sessionCountsPerClass.get(s.class_id) ?? 0) + 1)
       }
 
       let kekuranganPertemuan = 0
-      for (const cl of classesRes.data ?? []) {
+      for (const cl of kelas ?? []) {
         const count = sessionCountsPerClass.get(cl.id) ?? 0
-        if (count > 0 && count < cl.jumlah_pertemuan) {
-          kekuranganPertemuan++
-        }
+        if (count > 0 && count < cl.jumlah_pertemuan) kekuranganPertemuan++
       }
 
       return {
